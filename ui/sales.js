@@ -2,6 +2,7 @@
 let names=['Soofi','Choice','Aju','Nikku','Muhanti','Nabaa','Chehche','Tara','Chubby','Aril','Ufu','Noddy','Xee','Rushdan','Kiah','Amna','Faya'];
 const drinks=[['Limeade',60,'lime','🍈'],['Lemonade',60,'lemon','🍋'],['Strawberry',70,'berry','🍓']];
 const $=id=>document.getElementById(id),money=n=>'MVR '+Number(n).toLocaleString();
+let saleClosing=false;
 let sales=[],cart=[0,0,0],off=0,busy=false,pending=null,range='today',historyRange='today',currentView='sell',syncing=false;
 const pendingKey='lemonade-pending-order-v1';
 try{const d=JSON.parse(localStorage.getItem(pendingKey)||'null');if(d&&typeof d.id==='string'&&Array.isArray(d.items)&&d.items.length===3&&d.items.every(n=>Number.isInteger(n)&&n>=0&&n<=100)&&[0,10].includes(d.discount)&&['Cash','Transfer'].includes(d.payment)){pending=d;cart=[...d.items];off=d.discount}}catch{}
@@ -21,8 +22,10 @@ function renderCart(){
  $('transfer').textContent=busy&&pending?.payment==='Transfer'?'Saving…':pending?.payment==='Transfer'?'Retry transfer':'Transfer';
  $('close-sale').disabled=busy;$('resume-sale').classList.toggle('hidden',!pending);
 }
-function openSale(i=0){if(busy)return;if(!pending){cart=[0,0,0];cart[i]=1;off=0;$('sale-error').textContent=''}else{$('sale-error').textContent='This sale is unconfirmed. Retry the same payment.'}setSellerOptions();renderCart();if(!$('sale-dialog').open)$('sale-dialog').showModal();document.body.classList.add('sale-open')}
-function closeSale(){if(busy)return;$('sale-dialog').close();document.body.classList.remove('sale-open');if(!pending){cart=[0,0,0];off=0}renderCart()}
+function openSale(i=0){if(busy||saleClosing)return;if(!pending){cart=[0,0,0];cart[i]=1;off=0;$('sale-error').textContent=''}else{$('sale-error').textContent='This sale is unconfirmed. Retry the same payment.'}setSellerOptions();renderCart();if(!$('sale-dialog').open){$('sale-dialog').showModal();requestAnimationFrame(()=>requestAnimationFrame(()=>{if($('sale-dialog').open&&!saleClosing)$('sale-dialog').classList.add('is-open')}))}document.body.classList.add('sale-open')}
+function waitForSaleSlide(dialog){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return Promise.resolve();return new Promise(resolve=>{let timer;const finish=()=>{clearTimeout(timer);dialog.removeEventListener('transitionend',end);resolve()};const end=e=>{if(e.target===dialog&&e.propertyName==='transform')finish()};dialog.addEventListener('transitionend',end);timer=setTimeout(finish,460)})}
+async function dismissSaleDialog(){const dialog=$('sale-dialog');if(!dialog.open)return;saleClosing=true;dialog.classList.remove('is-open');await waitForSaleSlide(dialog);dialog.close();document.body.classList.remove('sale-open');saleClosing=false}
+async function closeSale(){if(busy||saleClosing)return;await dismissSaleDialog();if(!pending){cart=[0,0,0];off=0}renderCart()}
 $('sale-dialog').addEventListener('cancel',e=>{e.preventDefault();closeSale()});
 function add(i,n){if(busy||pending)return;cart[i]=Math.max(0,Math.min(100,cart[i]+n));renderCart()}
 function setDiscount(n){if(busy||pending)return;off=n;renderCart()}
@@ -33,7 +36,8 @@ function tally(list){return [...new Set([...names,...list.map(s=>s.seller)])].ma
 function period(p){range=p;$('today').classList.toggle('chosen',p==='today');$('all').classList.toggle('chosen',p==='all');renderBoard()}
 function historyPeriod(p){historyRange=p;$('history-today').classList.toggle('chosen',p==='today');$('history-all').classList.toggle('chosen',p==='all');renderHistory()}
 function flavorSummary(s){try{return JSON.parse(s.items).map((n,i)=>n?n+' '+drinks[i][0]:'').filter(Boolean).join(' · ')}catch{return s.cups+' cups'}}
-function renderHistory(){const rows=byPeriod(historyRange);$('history-total').textContent=money(rows.reduce((a,s)=>a+s.total,0));$('history-count').textContent=rows.length+' sale'+(rows.length===1?'':'s');$('recent').innerHTML=rows.length?rows.map(s=>'<div class="history-row"><span class="payment-icon">'+(s.payment==='Cash'?'💵':'🏦')+'</span><div class="history-detail"><b>'+safe(s.seller)+'</b><small>'+safe(flavorSummary(s))+'</small><small>'+new Date(s.created_at).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+' · '+s.payment+'</small></div><strong>'+money(s.total)+'</strong></div>').join(''):'<div class="empty">No sales '+(historyRange==='today'?'today':'yet')+' 🍋</div>'}
+function renderHistory(){renderLatestSales();const rows=byPeriod(historyRange);$('history-total').textContent=money(rows.reduce((a,s)=>a+s.total,0));$('history-count').textContent=rows.length+' sale'+(rows.length===1?'':'s');$('recent').innerHTML=rows.length?rows.map(s=>'<div class="history-row"><span class="payment-icon">'+(s.payment==='Cash'?'💵':'🏦')+'</span><div class="history-detail"><b>'+safe(s.seller)+'</b><small>'+safe(flavorSummary(s))+'</small><small>'+new Date(s.created_at).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+' · '+s.payment+'</small></div><strong>'+money(s.total)+'</strong></div>').join(''):'<div class="empty">No sales '+(historyRange==='today'?'today':'yet')+' 🍋</div>'}
+function renderLatestSales(){const rows=[...sales].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,4);const markup=rows.length?rows.map(s=>'<div class="history-row"><span class="payment-icon" aria-hidden="true">'+(s.payment==='Cash'?'💵':'🏦')+'</span><div class="history-detail"><b>'+safe(s.seller)+'</b><small>'+safe(flavorSummary(s))+'</small><small>'+safe(s.payment)+' · '+new Date(s.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',timeZone:'Indian/Maldives'})+'</small></div><strong>'+money(s.total)+'</strong></div>').join(''):'<div class="empty">Your first sale goes here 🍋</div>';if($('latest-sales').innerHTML!==markup)$('latest-sales').innerHTML=markup}
 function renderBoard(){
  const rows=tally(byPeriod(range)),cups=rows.reduce((a,r)=>a+r.cups,0),total=rows.reduce((a,r)=>a+r.total,0);
  const podiumMarkup=cups?[1,0,2].filter(i=>rows[i]).map(i=>{const r=rows[i];return '<div class="podium-person p'+i+'"><div class="podium-avatar">'+(i===0?'👑':safe(r.name[0]))+'</div><b>'+safe(r.name)+'</b><span>'+r.cups+' 🥤</span><div class="podium-step">'+(rows.findIndex(x=>x.cups===r.cups)+1)+'</div></div>'}).join(''):'<div class="no-race"><span data-motion="top-squeezer" aria-hidden="true">🏆</span><b>The crown is waiting.</b></div>';
@@ -49,11 +53,17 @@ async function sync(){if(syncing)return;syncing=true;try{
  renderHistory();if(currentView==='board')renderBoard();if(adminOpen&&['overview','sales'].includes(adminPage))renderAdmin();
 }catch{$('sync').textContent='Offline';$('sync').classList.add('offline')}finally{syncing=false}}
 async function checkout(payment){
- if(busy||!cart.some(Boolean)||(pending&&pending.payment!==payment))return;
+ if(busy||saleClosing||!cart.some(Boolean)||(pending&&pending.payment!==payment))return;
  pending=pending||{id:crypto.randomUUID(),seller:$('seller').value,items:[...cart],discount:off,payment};
- try{localStorage.setItem(pendingKey,JSON.stringify(pending))}catch{}busy=true;$('sale-error').textContent='';renderCart();
+ try{localStorage.setItem(pendingKey,JSON.stringify(pending))}catch{}busy=true;$('sale-error').textContent='';renderCart();let confirmed=false;
  try{const response=await fetch('/api/sales',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pending)});if(!response.ok)throw Error();
- pending=null;try{localStorage.removeItem(pendingKey)}catch{}cart=[0,0,0];off=0;$('sale-dialog').close();document.body.classList.remove('sale-open');toast('Sale recorded ✓');if(window.celebrateSale)window.celebrateSale();await sync();
- }catch{$('sale-error').textContent='Sale not confirmed. Retry the same payment. Your order is kept.'}finally{busy=false;renderCart()}
+ confirmed=true;pending=null;try{localStorage.removeItem(pendingKey)}catch{}cart=[0,0,0];off=0;
+ $('sale-success').classList.remove('hidden');$('sale-success').setAttribute('aria-hidden','false');$('sale-edit-content').inert=true;
+ // Refresh sales independently; visual failures must never turn a confirmed sale into a retry.
+ void sync();try{if(window.celebrateSale)await window.celebrateSale()}catch{}
+ await dismissSaleDialog();toast('Sale recorded ✓');
+ }catch{if(!confirmed)$('sale-error').textContent='Sale not confirmed. Retry the same payment. Your order is kept.'}
+ finally{if(confirmed){if($('sale-dialog').open)await dismissSaleDialog();$('sale-success').classList.add('hidden');$('sale-success').setAttribute('aria-hidden','true');$('sale-edit-content').inert=false}busy=false;renderCart()}
 }
 async function undo(id){if(!confirm('Undo this sale? It will be removed from totals and rankings.'))return;try{const r=await fetch('/api/void',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});if(!r.ok)throw Error();await sync();toast('Sale undone.')}catch{toast('Could not undo. Please retry.')}}
+
