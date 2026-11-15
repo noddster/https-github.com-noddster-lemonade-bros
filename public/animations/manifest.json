@@ -1,0 +1,33 @@
+{
+  "generator": "Lottie AI",
+  "original_prompts": true,
+  "existing_user_animation_modified": false,
+  "animations": [
+    {
+      "file": "lemon-hop.json",
+      "title": "Lemon Hop",
+      "use": "Loader \u00b7 2s"
+    },
+    {
+      "file": "fresh-cup.json",
+      "title": "Fresh Cup",
+      "use": "Empty order \u00b7 3s"
+    },
+    {
+      "file": "sweet-sale.json",
+      "title": "Sweet Sale",
+      "use": "Sale recorded \u00b7 1.5s"
+    },
+    {
+      "file": "top-squeezer.json",
+      "title": "Top Squeezer",
+      "use": "Leaderboard \u00b7 2s"
+    }
+  ],
+  "editor_urls": {
+    "lemon-hop": "https://lottie.ai/studio?c=40364d75-41ad-48df-95af-f367dc76a8a3",
+    "fresh-cup": "https://lottie.ai/studio?c=d6f0b3f5-ea9f-40fb-8f82-1cd9808f7063",
+    "sweet-sale": "https://lottie.ai/studio?c=2496e965-382c-4c3e-a5d7-fa906a826ad3",
+    "top-squeezer": "https://lottie.ai/studio?c=8e0a5d3a-47db-432e-ac52-1c5cd1054868"
+  }
+}

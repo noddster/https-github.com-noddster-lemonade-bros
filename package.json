@@ -1,0 +1,1 @@
+{"name":"lemonade-bros-netlify","private":true,"type":"module","scripts":{"build":"node scripts/build.mjs"},"dependencies":{"@netlify/blobs":"latest"},"engines":{"node":">=22"}}
