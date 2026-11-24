@@ -21,3 +21,7 @@
 `npm run dev` uses a disposable in-memory store at localhost:4500, never live sales. Set LOCAL_PREVIEW_PIN in your local shell if you want to exercise owner setup; no default local credential is bundled.
 
 Browser automation could not launch in the execution sandbox (Chromium socket operation denied), and the separate browser cannot reach localhost. Verify the actual published shop and login visually before announcing final delivery. Do not claim real iPhone testing.
+
+## Team login setup
+
+Staff sign in with their team name; capitalization is ignored. In Merch & accounts → Staff accounts, a super admin can enter a shared employee password once and set up the active team. Passwords are never embedded in the source. Each account gets an independent salt and PBKDF2 hash. The form can optionally require a personal password change at first login; it is off by default for the requested shared-password workflow. Disabled accounts and Admin/Super Admin credentials are preserved. A shared employee password can be changed by repeating the setup operation. Employee permissions and server-side seller attribution remain per account.

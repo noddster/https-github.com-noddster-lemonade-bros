@@ -46,7 +46,13 @@ test('staff roles, retained accounting, atomic orders and payments',async()=>{
  assert.equal((await call('/api/shop/order-status',{id:order.id,status:'cancelled',paymentStatus:'refunded'},ownerCookie)).r.status,200);assert.equal((await call('/api/shop/summary',null,ownerCookie)).data.revenue,0);assert.equal((await call('/api/shop/manage',null,ownerCookie)).data.product.variants.find(v=>v.size==='M').stock,1);
  await call('/api/shop/order-status',{id:order.id,status:'cancelled',paymentStatus:'refunded'},ownerCookie);assert.equal((await call('/api/shop/manage',null,ownerCookie)).data.product.variants.find(v=>v.size==='M').stock,1);
  assert.equal((await call('/api/shop/order-status',{id:order.id,status:'preparing',paymentStatus:'unpaid'},ownerCookie)).r.status,400);
- const accounts=await call('/api/accounts',null,ownerCookie);const employee=accounts.data.users.find(u=>u.username==='soofi');assert.equal((await call('/api/accounts',{...employee,active:false},ownerCookie)).r.status,200);assert.equal((await call('/api/sales',null,workerCookie)).r.status,401);
+ const accounts=await call('/api/accounts',null,ownerCookie);const employee=accounts.data.users.find(u=>u.name==='Soofi');assert.equal((await call('/api/accounts',{...employee,active:false},ownerCookie)).r.status,200);assert.equal((await call('/api/sales',null,workerCookie)).r.status,401);
+ const sharedPassword='isolated-fixture-'+crypto.randomUUID();
+ assert.equal((await call('/api/accounts/team',{password:sharedPassword},workerCookie)).r.status,401);
+ const bulk=await call('/api/accounts/team',{password:sharedPassword,requireChange:false},ownerCookie);assert.equal(bulk.r.status,200);assert.ok(bulk.data.updated.includes('Faya'));assert.ok(!bulk.data.updated.includes('Noddy'));assert.ok(!bulk.data.updated.includes('Soofi'));
+ const faya=await call('/api/auth/login',{username:'FAYA',password:sharedPassword});assert.equal(faya.r.status,200);assert.equal(faya.data.user.name,'Faya');assert.equal(faya.data.user.username,'Faya');assert.equal(faya.data.user.resetRequired,false);assert.equal(faya.data.user.role,'employee');assert.equal((await call('/api/accounts',null,faya.cookie)).r.status,403);
+ assert.equal((await call('/api/auth/login',{username:'NODDY',password:setup.password})).r.status,200);
+ const publicCatalogue=JSON.stringify((await call('/api/shop')).data);assert.ok(!publicCatalogue.includes(sharedPassword));
  assert.equal((await call('/api/auth/logout',{},ownerCookie)).r.status,200);assert.equal((await call('/api/admin',null,ownerCookie)).r.status,401);
  const secrets=JSON.stringify((await call('/api/shop')).data);assert.ok(!secrets.includes('Test customer'));assert.ok(!secrets.includes('test-owner-password'));
 });
