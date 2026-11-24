@@ -1,12 +1,12 @@
 # The Lemonade Bros
 
-Phone-friendly lemonade stall POS with animated drink cards, a sale popup, shared sales history, a friends' leaderboard, and admin tools.
+Phone-friendly T-shirt shop, a private animated lemonade till, individual staff accounts, merchandise order management, and a Super Admin financial panel.
 
 ## Edit and preview
 
-Open this repository in VS Code. The deployed page's HTML, CSS, and JavaScript are currently bundled in `lib/app.mjs` (the `html` template near the bottom). Edit that file for live site changes. The files under `ui/` are reference copies from the mobile redesign; they are not independently built.
+Open this repository in VS Code. Public shop: `public/shop.html`, `public/shop.css`, `public/shop.js`. Staff till markup/styles and legacy ledger API: `lib/app.mjs`. Till and Super Admin logic: `ui/sales.js` and `ui/admin.js`, assembled with `public/staff/session.js` by the build. Commerce and account API: `lib/commerce.mjs`. Merchandise/account screens: `public/staff/manage.*`.
 
-Run `npm install` then `npm run build` to generate `public/index.html`. For a standalone local demo, open `EDITABLE-PREVIEW.html`; its test sales stay in that browser and do not reach the live stall. The preview PIN is 1234. This preview is a snapshot and must be regenerated when the production app changes.
+Run `npm install`, `npm test`, then `npm run build`. The build generates the public shop at `public/index.html` and the private till at `public/staff/index.html`. `npm run dev` serves an isolated in-memory preview; it never connects to live sales. `EDITABLE-PREVIEW.html` is an older POS-only snapshot, not the current shop or staff authentication flow.
 
 ## Netlify automatic deployment
 
@@ -14,4 +14,5 @@ Link this repository to the existing Netlify project `lemonade-bros-squeeze`. Us
 
 The backend uses Netlify Functions and Netlify Blobs with conditional writes and stable sale IDs for simultaneous sellers and retries. Uploading only `public` will not deploy the backend.
 
-Set `ADMIN_PIN` and a random `SESSION_SECRET` of at least 32 bytes in Netlify's server-side environment variables with Functions scope. Never commit these values. Admin stays locked until configured. No production sales data or secrets are stored in this repository.
+Keep the existing `ADMIN_PIN` and `SESSION_SECRET` in Netlify's server-side environment variables with Functions scope. Never commit these values. On first staff visit, the existing PIN authorizes creation of the first individual Super Admin account. After that, staff use individual usernames and passwords. See `docs/merch/OPERATIONS.md` for setup, stock, payment verification, role permissions and accounting details. No customer orders or account credentials are committed to this repository.
+

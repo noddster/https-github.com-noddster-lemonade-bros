@@ -9,14 +9,15 @@ try{const d=JSON.parse(localStorage.getItem(pendingKey)||'null');if(d&&typeof d.
 function art(d){return '<span class="art '+d[2]+'"><span class="cup"><span class="straw"></span><span class="liquid"></span><span class="ice"></span><span class="slice"></span><span class="cup-face">:)</span></span><span class="fruit">'+d[3]+'</span><span class="artplus">+</span></span>'}
 $('products').innerHTML=drinks.map((d,i)=>'<button class="drink-card" onclick="openSale('+i+')" aria-label="Sell '+d[0]+'">'+art(d)+'<span class="drink-details"><b>'+d[0]+'</b><span><small>MVR</small> '+d[1]+'</span></span></button>').join('');
 $('flavours').innerHTML=drinks.map((d,i)=>'<div class="flavour-row"><button class="flavour-choice" id="flavour'+i+'" onclick="add('+i+',1)" aria-label="Add '+d[0]+'"><span class="flavour-icon '+d[2]+'">'+d[3]+'</span><span><b>'+d[0]+'</b><small id="unit'+i+'">'+money(d[1])+'</small></span></button><div class="sheet-qty"><button aria-label="Remove '+d[0]+'" onclick="add('+i+',-1)">−</button><output id="qty'+i+'">0</output><button aria-label="Add one '+d[0]+'" onclick="add('+i+',1)">+</button></div></div>').join('');
-function setSellerOptions(){const select=$('seller'),previous=pending?.seller||select.value||localStorage.getItem('lemon-seller')||names[0];const choices=[...names];if(pending&&!choices.includes(previous))choices.push(previous);select.innerHTML=choices.map(n=>'<option>'+safe(n)+'</option>').join('');select.value=choices.includes(previous)?previous:choices[0]}
-function sellerChanged(){localStorage.setItem('lemon-seller',$('seller').value)}
+function setSellerOptions(){const select=$('seller');const name=staffUser?.name||'';select.replaceChildren(new Option(name,name));select.value=name;select.disabled=true}
+function sellerChanged(){}
 function renderCart(){
  const cups=cart.reduce((a,n)=>a+n,0),total=cart.reduce((a,n,i)=>a+n*(drinks[i][1]-off),0),locked=busy||!!pending;
  cart.forEach((n,i)=>{$('qty'+i).textContent=n;$('unit'+i).textContent=money(drinks[i][1]-off);$('flavour'+i).classList.toggle('selected',n>0)});
  $('cupcount').textContent=cups+' cup'+(cups===1?'':'s');$('total').textContent=money(total);
  $('discount0').classList.toggle('selected',off===0);$('discount10').classList.toggle('selected',off===10);
  $('sale-fields').querySelectorAll('button,select').forEach(b=>b.disabled=locked);
+ $('seller').disabled=true;
  $('cash').disabled=!cups||busy||(pending&&pending.payment!=='Cash');$('transfer').disabled=!cups||busy||(pending&&pending.payment!=='Transfer');
  $('cash').textContent=busy&&pending?.payment==='Cash'?'Saving…':pending?.payment==='Cash'?'Retry cash':'Cash';
  $('transfer').textContent=busy&&pending?.payment==='Transfer'?'Saving…':pending?.payment==='Transfer'?'Retry transfer':'Transfer';
@@ -35,7 +36,7 @@ function byPeriod(period){return period==='all'?sales:sales.filter(s=>day(s.crea
 function tally(list){return [...new Set([...names,...list.map(s=>s.seller)])].map(name=>({name,cups:list.filter(s=>s.seller===name).reduce((a,s)=>a+s.cups,0),total:list.filter(s=>s.seller===name).reduce((a,s)=>a+s.total,0)})).sort((a,b)=>b.cups-a.cups||a.name.localeCompare(b.name))}
 function period(p){range=p;$('today').classList.toggle('chosen',p==='today');$('all').classList.toggle('chosen',p==='all');renderBoard()}
 function historyPeriod(p){historyRange=p;$('history-today').classList.toggle('chosen',p==='today');$('history-all').classList.toggle('chosen',p==='all');renderHistory()}
-function flavorSummary(s){try{return JSON.parse(s.items).map((n,i)=>n?n+' '+drinks[i][0]:'').filter(Boolean).join(' · ')}catch{return s.cups+' cups'}}
+function flavorSummary(s){try{const data=JSON.parse(s.items);if(data.kind==='reconciliation')return 'Cash reconciliation · cup count unavailable';return data.map((n,i)=>n?n+' '+drinks[i][0]:'').filter(Boolean).join(' · ')}catch{return s.cups+' cups'}}
 function renderHistory(){renderLatestSales();const rows=byPeriod(historyRange);$('history-total').textContent=money(rows.reduce((a,s)=>a+s.total,0));$('history-count').textContent=rows.length+' sale'+(rows.length===1?'':'s');$('recent').innerHTML=rows.length?rows.map(s=>'<div class="history-row"><span class="payment-icon">'+(s.payment==='Cash'?'💵':'🏦')+'</span><div class="history-detail"><b>'+safe(s.seller)+'</b><small>'+safe(flavorSummary(s))+'</small><small>'+new Date(s.created_at).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+' · '+s.payment+'</small></div><strong>'+money(s.total)+'</strong></div>').join(''):'<div class="empty">No sales '+(historyRange==='today'?'today':'yet')+' 🍋</div>'}
 function renderLatestSales(){const rows=[...sales].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,4);const markup=rows.length?rows.map(s=>'<div class="history-row"><span class="payment-icon" aria-hidden="true">'+(s.payment==='Cash'?'💵':'🏦')+'</span><div class="history-detail"><b>'+safe(s.seller)+'</b><small>'+safe(flavorSummary(s))+'</small><small>'+safe(s.payment)+' · '+new Date(s.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',timeZone:'Indian/Maldives'})+'</small></div><strong>'+money(s.total)+'</strong></div>').join(''):'<div class="empty">Your first sale goes here 🍋</div>';if($('latest-sales').innerHTML!==markup)$('latest-sales').innerHTML=markup}
 function renderBoard(){
@@ -49,8 +50,8 @@ function renderBoard(){
 let toastTimer;function toast(text){$('toast').textContent=text;$('toast').classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.add('hidden'),4000)}
 async function sync(){if(syncing)return;syncing=true;try{
  const tr=await fetch('/api/team');if(tr.ok){const team=await tr.json();if(Array.isArray(team)&&team.length&&team.every(n=>typeof n==='string')&&JSON.stringify(team)!==JSON.stringify(names)){names=team;setSellerOptions()}}
- const response=await fetch('/api/sales');if(!response.ok)throw Error();const result=await response.json();if(!Array.isArray(result))throw Error();sales=result;$('sync').textContent='Live sync';$('sync').classList.remove('offline');
- renderHistory();if(currentView==='board')renderBoard();if(adminOpen&&['overview','sales'].includes(adminPage))renderAdmin();
+ const response=await fetch('/api/sales');if(response.status===401){location.replace('/staff/login.html');return}if(!response.ok)throw Error();const result=await response.json();if(!Array.isArray(result))throw Error();sales=result;$('sync').textContent='Live sync';$('sync').classList.remove('offline');
+ if(adminOpen)await loadMerchSummary();renderHistory();if(currentView==='board')renderBoard();if(adminOpen&&['overview','sales'].includes(adminPage))renderAdmin();
 }catch{$('sync').textContent='Offline';$('sync').classList.add('offline')}finally{syncing=false}}
 async function checkout(payment){
  if(busy||saleClosing||!cart.some(Boolean)||(pending&&pending.payment!==payment))return;
@@ -66,4 +67,5 @@ async function checkout(payment){
  finally{if(confirmed){if($('sale-dialog').open)await dismissSaleDialog();$('sale-success').classList.add('hidden');$('sale-success').setAttribute('aria-hidden','true');$('sale-edit-content').inert=false}busy=false;renderCart()}
 }
 async function undo(id){if(!confirm('Undo this sale? It will be removed from totals and rankings.'))return;try{const r=await fetch('/api/void',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});if(!r.ok)throw Error();await sync();toast('Sale undone.')}catch{toast('Could not undo. Please retry.')}}
+
 

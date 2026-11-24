@@ -1,0 +1,10 @@
+import http from 'node:http';
+import {readFile,stat} from 'node:fs/promises';
+import {resolve,extname} from 'node:path';
+import app from '../lib/app.mjs';
+import {createDb} from '../lib/storage.mjs';
+import {memoryStore} from '../test/memory-store.mjs';
+const STORE=memoryStore(),env={STORE,DB:createDb(STORE),ADMIN_PIN:process.env.LOCAL_PREVIEW_PIN,SESSION_SECRET:crypto.randomUUID()};
+const root=resolve('public');
+const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.json':'application/json','.png':'image/png','.webp':'image/webp'};
+http.createServer(async(req,res)=>{try{const url=new URL(req.url,'http://localhost:4500');if(url.pathname.startsWith('/api/')){const chunks=[];for await(const chunk of req)chunks.push(chunk);const request=new Request(url,{method:req.method,headers:req.headers,...(!['GET','HEAD'].includes(req.method)?{body:Buffer.concat(chunks)}:{})});const result=await app.fetch(request,env);res.writeHead(result.status,Object.fromEntries(result.headers));res.end(Buffer.from(await result.arrayBuffer()));return}let file=resolve(root,'.'+decodeURIComponent(url.pathname));if(!file.startsWith(root+'/'))throw Error();if((await stat(file)).isDirectory())file=resolve(file,'index.html');res.writeHead(200,{'Content-Type':types[extname(file)]||'application/octet-stream'});res.end(await readFile(file))}catch{res.writeHead(404);res.end('Not found')}}).listen(4500,'127.0.0.1',()=>console.log('Isolated preview http://localhost:4500'));

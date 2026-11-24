@@ -8,7 +8,9 @@ export default async function handler(request){
  const store=getStore({name:'lemonade-bros',consistency:'strong'});
  return app.fetch(normalized,{
   DB:createDb(store),
+  STORE:store,
   ADMIN_PIN:process.env.ADMIN_PIN,
   SESSION_SECRET:process.env.SESSION_SECRET
  });
 }
+
