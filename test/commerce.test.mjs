@@ -11,7 +11,7 @@ test('staff roles, retained accounting, atomic orders and payments',async()=>{
  assert.equal((await call('/api/sales')).r.status,401);
  assert.equal((await call('/api/admin')).r.status,401);
  assert.equal((await call('/api/login',{pin:env.ADMIN_PIN})).r.status,410);
- const shop=await call('/api/shop');assert.equal(shop.data.product.price,550);assert.equal(shop.data.settings.deliveryFee,0);assert.equal(shop.data.settings.accountNumber,'');assert.ok(shop.data.product.variants.every(v=>!v.available));assert.ok(!('users' in shop.data));
+ const shop=await call('/api/shop');assert.equal(shop.data.product.price,550);assert.equal(shop.data.settings.deliveryFee,0);assert.equal(shop.data.settings.accountNumber,'77300008887919');assert.ok(shop.data.product.variants.every(v=>!v.available));assert.ok(!('users' in shop.data));
  const setup={name:'Noddy',username:'noddy',password:'test-owner-password-123',pin:env.ADMIN_PIN};
  assert.equal((await call('/api/auth/setup',setup,'','https://evil.invalid')).r.status,403);
  const owner=await call('/api/auth/setup',setup);assert.equal(owner.r.status,201);assert.equal(owner.data.user.role,'superadmin');assert.ok(!('hash' in owner.data.user));const ownerCookie=owner.cookie;
@@ -21,7 +21,7 @@ test('staff roles, retained accounting, atomic orders and payments',async()=>{
  const adjustment={id:'mock-reconciliation-123',seller:'Noddy',amount:123.45,note:'Isolated test adjustment'};
  assert.equal((await call('/api/reconciliation',adjustment)).r.status,401);
  const [one,two]=await Promise.all([call('/api/reconciliation',adjustment,ownerCookie),call('/api/reconciliation',adjustment,ownerCookie)]);assert.equal(one.r.status,200);assert.equal(two.r.status,200);
- const ledger=await call('/api/sales',null,ownerCookie);assert.equal(ledger.data.filter(x=>x.id==='recon-'+adjustment.id).length,1);assert.equal(ledger.data.reduce((n,x)=>n+x.total,0),243.45);assert.equal(ledger.data.reduce((n,x)=>n+x.cups,0),2);
+ const ledger=await call('/api/sales',null,ownerCookie);assert.equal(ledger.data.filter(x=>x.id==='recon-'+adjustment.id).length,1);assert.equal(ledger.data.reduce((n,x)=>n+x.total,0),1528.45);assert.equal(ledger.data.filter(x=>x.id==='cash-reconciliation-noddy-20261124-1285').length,1);assert.equal(ledger.data.reduce((n,x)=>n+x.cups,0),2);
  const adminConfig=await call('/api/admin',null,ownerCookie);assert.deepEqual(adminConfig.data,{expenses:[],team:[]});
  const created=await call('/api/accounts',{name:'Soofi',username:'soofi',password:'test-employee-password',role:'employee',active:true},ownerCookie);assert.equal(created.r.status,200);
  const worker=await call('/api/auth/login',{username:'soofi',password:'test-employee-password'});assert.equal(worker.r.status,200);assert.equal(worker.data.user.resetRequired,true);

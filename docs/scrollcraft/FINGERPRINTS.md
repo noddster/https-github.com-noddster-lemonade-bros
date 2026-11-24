@@ -29,8 +29,7 @@ changes only grammar and world will fail it.
 | Build | Grammar | Nav treatment | Hero device | Act-sequence shape | Close pattern | Signature move | World | Port |
 |---|---|---|---|---|---|---|---|---|
 
-*(empty: your first build has nothing to clear, so build whatever the interview
-points at. From the second onwards, this table is the constraint.)*
+| Lemonade Bros merch | Gallery/catalog | Object index, detail anchor and bag | Illustrated tee, independent lemon plane and live size tag | Natural product surface, gallery rail, factual flow, short close | Navy crew invitation returning to real size selection | Size selection becomes a hangtag with live bag count | Playful illustrated yellow/navy | Netlify |
 
 ---
 
@@ -41,7 +40,7 @@ reusing: a grammar, a nav treatment, a close pattern, a signature move, an
 act-count-and-length band. The shared columns are what the next build inherits
 as a constraint, so writing them down is the whole point.
 
-Nothing is taken yet.
+- Claimed: illustrated tee gallery, live size hangtag/bag tag, yellow/navy object-led shop. First build; no prior rows to compare.
 
 ---
 

@@ -15,7 +15,7 @@ Self-authored implementation decisions under the user's instruction to proceed; 
 - Ordering: cash on delivery or transfer to Ulduz; address required for delivery; same-day delivery. Account number, price, fee and service area pending configuration. Disable checkout until required settings are present.
 - Size guide: dedicated dialog and editable measurements; explicit pending state until the real chart is supplied.
 - Authority: super admin controls catalogue, stock, accounts, finances; admin manages merch orders and stock; employee uses existing private lemonade POS and their own name.
-- Migration: retain original Netlify ledger. Record missing cash privately through an authenticated Super Admin form, without inventing a cup count or publishing the amount in source code.
+- Migration: retain original Netlify ledger. Owner approved publishing a one-time cash reconciliation after review. Insert it once without inventing cup counts; future adjustments use the authenticated private form.
 - Seller contribution: revenue share and estimated allocation of net result, proportional to revenue. Negative net result is labelled an allocated loss, never profit. Cup race continues to rank cups independently.
 
 ## Layer contract
